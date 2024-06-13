@@ -6,6 +6,7 @@ import typing
 from vfi_utils import InterpolationStateList, load_file_from_github_release, preprocess_frames, postprocess_frames
 import pathlib
 import gc
+import comfy.utils
 
 MODEL_TYPE = pathlib.Path(__file__).parent.name
 DEVICE = get_torch_device()
@@ -85,7 +86,10 @@ class FILM_VFI:
         else:
             multipliers = list(map(int, multiplier))
             multipliers += [2] * (len(frames) - len(multipliers) - 1)
+            
+        pbar = comfy.utils.ProgressBar(len(frames) - 1)
         for frame_itr in range(len(frames) - 1): # Skip the final frame since there are no frames after it
+            pbar.update_absolute(frame_itr, len(frames) - 1, None)          
             if interpolation_states is not None and interpolation_states.is_frame_skipped(frame_itr):
                 continue
             #Ensure that input frames are in fp32 - the same dtype as model
