@@ -9,6 +9,7 @@ import einops
 import gc
 import torchvision.transforms.functional as transform
 from comfy.model_management import soft_empty_cache, get_torch_device
+import comfy.utils
 import numpy as np
 
 BASE_MODEL_DOWNLOAD_URLS = [
@@ -132,6 +133,7 @@ def _generic_frame_loop(
         dtype=torch.float16,
         final_logging=True):
     
+    
     #https://github.com/hzwer/Practical-RIFE/blob/main/inference_video.py#L169
     def non_timestep_inference(frame0, frame1, n):        
         middle = return_middle_frame_function(frame0, frame1, None, *return_middle_frame_function_args)
@@ -147,9 +149,13 @@ def _generic_frame_loop(
     output_frames = torch.zeros(multiplier*frames.shape[0], *frames.shape[1:], dtype=dtype, device="cpu")
     out_len = 0
 
+    
     number_of_frames_processed_since_last_cleared_cuda_cache = 0
     
-    for frame_itr in range(len(frames) - 1): # Skip the final frame since there are no frames after it
+    pbar = comfy.utils.ProgressBar(len(frames) - 1)
+        
+    for frame_itr in range(len(frames) - 1): # Skip the final frame since there are no frames after it        
+        pbar.update_absolute(frame_itr, len(frames) - 1, None)            
         frame0 = frames[frame_itr:frame_itr+1]
         output_frames[out_len] = frame0 # Start with first frame
         out_len += 1
